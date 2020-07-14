@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master, dev, vue-test ]
   pull_request:
-    branches: [ master, dev ]
+    branches: [ master, dev, vue-test ]
 
 jobs:
 
