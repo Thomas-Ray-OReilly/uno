@@ -28,7 +28,7 @@ jobs:
         node-version: 12.x
     - run: npm install
       working-directory: client
-    - run: npm test:unit:
+    - run: npm test:unit
       working-directory: client
 
     
