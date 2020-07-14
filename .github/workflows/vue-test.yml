@@ -22,9 +22,8 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v1
     - name: Run Jest
+      working-directory: client/
       uses: stefanoeb/jest-action@1.0.3
-      with:
-        jestArgs: client/tests/unit/
 
     
     #- name: Run a multi-line script
