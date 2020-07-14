@@ -5,7 +5,7 @@
         <v-col :cols="6">
           <!-- Game stats -->
           <v-row>
-            <v-card :class="'ma-3 pa-6'" outlined tile>
+            <v-card id="game_id" :class="'ma-3 pa-6'" outlined tile>
               Current Game id: {{ game_id }}
               <span v-if="!valid">Invalid Game Id</span>
             </v-card>
@@ -73,6 +73,7 @@
 import axios from "axios";
 import Card from "../components/Card";
 export default {
+  name: 'About',
   props: {
     game_id: {
       required: false

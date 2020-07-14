@@ -1,5 +1,8 @@
-Read me
+![Go](https://github.com/Thomas-Ray-OReilly/uno/workflows/Go/badge.svg?branch=master)
+![Vue](https://github.com/Thomas-Ray-OReilly/uno/workflows/vue-test/badge.svg)
 
+
+Read me
 
 ## To run 
 
