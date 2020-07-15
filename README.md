@@ -1,4 +1,6 @@
-![Go](https://github.com/jak103/uno/workflows/Go/badge.svg?branch=master)
+![Go](https://github.com/Thomas-Ray-OReilly/uno/workflows/Go/badge.svg)
+![Vue](https://github.com/Thomas-Ray-OReilly/uno/workflows/vue-test/badge.svg)
+
 
 Read me
 
