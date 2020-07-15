@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve --port 3000",
-    "build": "vue-cli-service build",
-    "test:unit": "vue-cli-service test:unit",
+    "build": "npx vue-cli-service build",
+	"test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint",
     "build-watch": "vue-cli-service build-watch"
   },
