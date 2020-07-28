@@ -131,8 +131,6 @@ func TestPlay(t *testing.T) {
 	startReq.Header.Set("Authorization", "Bearer "+loginRes.Payload["JWT"].(string))
 	e.ServeHTTP(startRec, startReq)
 
-	// req := httptest.NewRequest(http.MethodGet, "/play", nil)
-	// req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	playRec := httptest.NewRecorder()
 	playReq := httptest.NewRequest(http.MethodPost, "/play/1/blue", nil)
 	playReq.Header.Set("Authorization", "Bearer "+loginRes.Payload["JWT"].(string))
