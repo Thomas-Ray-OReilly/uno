@@ -53,17 +53,13 @@ func newGame(c echo.Context) error {
 }
 
 func login(c echo.Context) error {
-	isHost := false
-	if c.Param("isHost") == "true" {
-		isHost = true
-	}
 	player, joinErr := joinGame(c.Param("game"), c.Param("username"))
 
 	if joinErr != nil {
 		return joinErr
 	}
 
-	return respondWithJWTIfValid(c, player, joinErr == nil, isHost)
+	return respondWithJWTIfValid(c, player, joinErr == nil)
 }
 
 func startGame(c echo.Context) error {
@@ -130,10 +126,10 @@ func respondIfValid(c echo.Context, valid bool, userId string, gameId string) er
 	return c.JSONPretty(http.StatusOK, response, "  ")
 }
 
-func respondWithJWTIfValid(c echo.Context, p *model.Player, valid bool, isHost bool) error {
+func respondWithJWTIfValid(c echo.Context, p *model.Player, valid bool) error {
 	// TODO: validate username and game id
 	// TODO: check if they have a JWT before just overriding it! If they do, we need to make a JWT based off of their current one, but add/change the gameid.
-	encodedJWT, err := newJWT(p.Name, p.ID, c.Param("game"), isHost, []byte(signKey))
+	encodedJWT, err := newJWT(p.Name, p.ID, c.Param("game"), false, []byte(signKey))
 
 	payload := newPayload(p.Name, c.Param("game"))
 
