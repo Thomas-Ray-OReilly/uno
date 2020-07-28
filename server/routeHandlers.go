@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -46,9 +47,10 @@ func newGame(c echo.Context) error {
 }
 
 func login(c echo.Context) error {
+	fmt.Println(c.Param("game"))
+	fmt.Println(c.Param("username"))
 	err := joinGame(c.Param("game"), c.Param("username"))
-
-	return respondWithJWTIfValid(c, err == nil)
+	return respondWithJWTIfValid(c, err)
 }
 
 func startGame(c echo.Context) error {
@@ -69,7 +71,7 @@ func update(c echo.Context) error {
 	}
 
 	valid := updateGame(claims["gameid"].(string))
-	return respondIfValid(c, valid && validUser, claims["userid"].(string), claims["gameid"].(string))
+	return respondIfValid(c, valid && validUser, claims["name"].(string), claims["gameid"].(string))
 }
 
 func play(c echo.Context) error {
@@ -87,7 +89,7 @@ func play(c echo.Context) error {
 	// TODO Cards have a value, which can include skip, reverse, etc
 	card := model.Card{c.Param("number"), c.Param("color")}
 	valid := playCard(claims["gameid"].(string), claims["name"].(string), card)
-	return respondIfValid(c, valid, claims["userid"].(string), claims["gameid"].(string))
+	return respondIfValid(c, valid, claims["name"].(string), claims["gameid"].(string))
 }
 
 func draw(c echo.Context) error {
@@ -103,23 +105,23 @@ func draw(c echo.Context) error {
 	}
 
 	valid := drawCard(claims["gameid"].(string), claims["name"].(string))
-	return respondIfValid(c, valid, claims["userid"].(string), claims["gameid"].(string))
+	return respondIfValid(c, valid, claims["name"].(string), claims["gameid"].(string))
 }
 
-func respondIfValid(c echo.Context, valid bool, userId string, gameId string) error {
+func respondIfValid(c echo.Context, valid bool, username string, gameId string) error {
 	var response *Response
 	if valid {
-		response = &Response{true, newPayload(userId, gameId)}
+		response = &Response{true, newPayload(username, gameId)}
 	} else {
 		response = &Response{false, nil}
 	}
 	return c.JSONPretty(http.StatusOK, response, "  ")
 }
 
-func respondWithJWTIfValid(c echo.Context, valid bool) error {
+func respondWithJWTIfValid(c echo.Context, optInputError error) error {
 	// TODO: validate username and game id
 
-	// check if they have a JWT before just overriding it!
+	// Check if they have a JWT before just overriding it!
 	// If they do, we need to make a JWT based off of their current one, but add/change the gameid.
 	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
 	var username string = c.Param("username")
@@ -146,11 +148,17 @@ func respondWithJWTIfValid(c echo.Context, valid bool) error {
 
 	var response *Response
 
-	if valid {
+	status := http.StatusOK
+
+	if optInputError == nil {
 		response = &Response{true, payload}
 	} else {
-		response = &Response{false, nil}
+		// forward the error if any
+		payload := make(map[string]interface{})
+		payload["error"] = optInputError.Error()
+		response = &Response{false, payload}
+		status = http.StatusBadRequest
 	}
 
-	return c.JSONPretty(http.StatusOK, response, "  ")
+	return c.JSONPretty(status, response, "  ")
 }

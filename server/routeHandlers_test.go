@@ -56,49 +56,68 @@ func TestLogin(t *testing.T) {
 	// Setup
 	e := echo.New()
 	setupRoutes(e)
-	req := httptest.NewRequest(http.MethodPost, "/login", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	e.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
+
+	var res Response
+	json.Unmarshal([]byte(rec.Body.String()), &res)
 
 	// Assertions
-	if assert.NoError(t, login(c)) {
-		assert.Equal(t, http.StatusOK, rec.Code)
-	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, res.ValidGame, true)
+	// JWT present
+	assert.NotEqual(t, res.Payload["JWT"], nil)
 }
 
 func TestDraw(t *testing.T) {
 	// Setup
 	e := echo.New()
 	setupRoutes(e)
-	req := httptest.NewRequest(http.MethodPost, "/draw", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+	loginRec := httptest.NewRecorder()
+	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
+
+	var loginRes Response
+	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
+	assert.NotEqual(t, loginRes.Payload["JWT"], nil)
+
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	req := httptest.NewRequest(http.MethodPost, "/draw", nil)
+	req.Header.Set("Authorization", loginRes.Payload["JWT"].(string))
+	e.ServeHTTP(rec, req)
 
 	// Assertions
-	if assert.NoError(t, draw(c)) {
-        // TODO: create a test with proper authorization!
-		//assert.Equal(t, http.StatusOK, rec.Code)
-        assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	}
+	var res Response
+	json.Unmarshal([]byte(rec.Body.String()), &res)
+
+	// Assertions
+	assert.Equal(t, http.StatusOK, rec.Code)
 }
 
 func TestUpdate(t *testing.T) {
 	// Setup
 	e := echo.New()
 	setupRoutes(e)
-	req := httptest.NewRequest(http.MethodGet, "/update", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+	loginRec := httptest.NewRecorder()
+	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
+
+	var loginRes Response
+	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
+	assert.NotEqual(t, loginRes.Payload["JWT"], nil)
+
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	req := httptest.NewRequest(http.MethodGet, "/update", nil)
+	req.Header.Set("Authorization", loginRes.Payload["JWT"].(string))
+	e.ServeHTTP(rec, req)
 
 	// Assertions
-	if assert.NoError(t, update(c)) {
-        // TODO: create a test with proper authorization!
-		//assert.Equal(t, http.StatusOK, rec.Code)
-        assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	}
+	var res Response
+	json.Unmarshal([]byte(rec.Body.String()), &res)
+
+	// Assertions
+	assert.Equal(t, http.StatusOK, rec.Code)
 }
 
 func TestPlay(t *testing.T) {
@@ -112,10 +131,30 @@ func TestPlay(t *testing.T) {
 
 	// Assertions
 	if assert.NoError(t, play(c)) {
-        // TODO: create a test with proper authorization!
+		// TODO: create a test with proper authorization!
 		//assert.Equal(t, http.StatusOK, rec.Code)
-        assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	}
+
+	// TODO - 404 received?
+	// loginRec := httptest.NewRecorder()
+	// e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
+
+	// var loginRes Response
+	// json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
+	// assert.NotEqual(t, loginRes.Payload["JWT"], nil)
+
+	// rec := httptest.NewRecorder()
+	// req := httptest.NewRequest(http.MethodGet, "/play", nil)
+	// req.Header.Set("Authorization", loginRes.Payload["JWT"].(string))
+	// e.ServeHTTP(rec, req)
+
+	// // Assertions
+	// var res Response
+	// json.Unmarshal([]byte(rec.Body.String()), &res)
+
+	// // Assertions
+	// assert.Equal(t, http.StatusOK, rec.Code)
 }
 
 func TestStartGame(t *testing.T) {
@@ -130,8 +169,8 @@ func TestStartGame(t *testing.T) {
 	players = []string{"player1", "player2"}
 	// Assertions
 	if assert.NoError(t, startGame(c)) {
-        // TODO: create a test with proper authorization!
+		// TODO: create a test with proper authorization!
 		//assert.Equal(t, http.StatusOK, rec.Code)
-        assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	}
 }
