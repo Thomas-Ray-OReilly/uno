@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
+
 	"github.com/jak103/uno/model"
 	"github.com/labstack/echo/v4"
 )
@@ -18,7 +18,7 @@ func setupRoutes(e *echo.Echo) {
 	e.GET("/newgame/:username", newGame)
 	e.GET("/update", update)
 	e.POST("/startgame", startGame)
-	e.POST("/login/:game/:username", login)
+	e.POST("/login/:game/:username/:isHost", login)
 	e.POST("/play/:number/:color", play)
 	e.POST("/draw", draw)
 }
@@ -31,16 +31,16 @@ func newGame(c echo.Context) error {
 	}
 
 	// TODO: validate username
-    username := c.Param("username")
-    
-    player, joinErr := joinGame(gameid, username)
-    
-    if joinErr != nil {
+	username := c.Param("username")
+
+	player, joinErr := joinGame(gameid, username)
+
+	if joinErr != nil {
 		return joinErr
 	}
-    
+
 	encodedJWT, err := newJWT(player.Name, player.ID, gameid, true, []byte(signKey))
-    
+
 	payload := newPayload(c.Param("username"), gameid)
 
 	if err == nil {
@@ -53,34 +53,37 @@ func newGame(c echo.Context) error {
 }
 
 func login(c echo.Context) error {
-    player, joinErr := joinGame(c.Param("game"), c.Param("username"))
-    
-    if joinErr != nil {
+	isHost := false
+	if c.Param("isHost") == "true" {
+		isHost = true
+	}
+	player, joinErr := joinGame(c.Param("game"), c.Param("username"))
+
+	if joinErr != nil {
 		return joinErr
 	}
-    
-    return respondWithJWTIfValid(c, player, joinErr == nil)
+
+	return respondWithJWTIfValid(c, player, joinErr == nil, isHost)
 }
 
 func startGame(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    
-    claims, validUser := getValidClaimsFromHeader(authHeader)
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+
+	claims, validUser := getValidClaimsFromHeader(authHeader)
 
 	if !validUser || claims["isHost"] != true {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
 	}
-    
+
 	dealCards()
 	return update(c)
 }
 
 func update(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    
-    claims, validUser := getValidClaimsFromHeader(authHeader)
+
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+
+	claims, validUser := getValidClaimsFromHeader(authHeader)
 
 	if !validUser {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
@@ -91,10 +94,9 @@ func update(c echo.Context) error {
 }
 
 func play(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    
-    claims, validUser := getValidClaimsFromHeader(authHeader)
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+
+	claims, validUser := getValidClaimsFromHeader(authHeader)
 
 	if !validUser {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
@@ -107,10 +109,8 @@ func play(c echo.Context) error {
 }
 
 func draw(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    
-    claims, validUser := getValidClaimsFromHeader(authHeader)
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+	claims, validUser := getValidClaimsFromHeader(authHeader)
 
 	if !validUser {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
@@ -130,30 +130,28 @@ func respondIfValid(c echo.Context, valid bool, username string, gameId string) 
 	return c.JSONPretty(http.StatusOK, response, "  ")
 }
 
-func respondWithJWTIfValid(c echo.Context, p *model.Player, valid bool) error {
+func respondWithJWTIfValid(c echo.Context, p *model.Player, valid bool, isHost bool) error {
 	// TODO: validate username and game id
 	// TODO: check if they have a JWT before just overriding it! If they do, we need to make a JWT based off of their current one, but add/change the gameid.
-	encodedJWT, err := newJWT(p.Name, p.ID, c.Param("game"), false, []byte(signKey))
+	encodedJWT, err := newJWT(p.Name, p.ID, c.Param("game"), isHost, []byte(signKey))
 
 	payload := newPayload(p.Name, c.Param("game"))
 
 	if err == nil {
 		payload = MakeJWTPayload(payload, encodedJWT)
 	} else {
-        return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
+		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
 	}
 
 	var response *Response
 
 	status := http.StatusOK
 
-	if optInputError == nil {
+	if valid {
 		response = &Response{true, payload}
 	} else {
 		// forward the error if any
-		payload := make(map[string]interface{})
-		payload["error"] = optInputError.Error()
-		response = &Response{false, payload}
+		response = &Response{false, nil}
 		status = http.StatusBadRequest
 	}
 
