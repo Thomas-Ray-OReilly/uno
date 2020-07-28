@@ -58,7 +58,7 @@ func TestLogin(t *testing.T) {
 	setupRoutes(e)
 
 	rec := httptest.NewRecorder()
-	e.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name/false", nil))
+	e.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
 
 	var res Response
 	json.Unmarshal([]byte(rec.Body.String()), &res)
@@ -76,7 +76,7 @@ func TestDraw(t *testing.T) {
 	setupRoutes(e)
 
 	loginRec := httptest.NewRecorder()
-	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name/false", nil))
+	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
 
 	var loginRes Response
 	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
@@ -97,7 +97,7 @@ func TestUpdate(t *testing.T) {
 	setupRoutes(e)
 
 	loginRec := httptest.NewRecorder()
-	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name/false", nil))
+	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
 
 	var loginRes Response
 	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
@@ -121,7 +121,7 @@ func TestPlay(t *testing.T) {
 	setupRoutes(e)
 	// login
 	loginRec := httptest.NewRecorder()
-	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name/false", nil))
+	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name", nil))
 	var loginRes Response
 	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
 	assert.NotEqual(t, loginRes.Payload["JWT"], nil)
@@ -138,17 +138,20 @@ func TestStartGame(t *testing.T) {
 	// Setup - you must login to start a game
 	e := echo.New()
 	setupRoutes(e)
-	// login
-	loginRec := httptest.NewRecorder()
-	e.ServeHTTP(loginRec, httptest.NewRequest(http.MethodPost, "/login/0/tester_name/true", nil))
-	var loginRes Response
-	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
-	assert.NotEqual(t, loginRes.Payload["JWT"], nil)
+
+	// new game
+	newGameRec := httptest.NewRecorder()
+	e.ServeHTTP(newGameRec, httptest.NewRequest(http.MethodGet, "/newgame/tester_name", nil))
+	assert.Equal(t, http.StatusOK, newGameRec.Code)
+
+	var newGameRes Response
+	json.Unmarshal([]byte(newGameRec.Body.String()), &newGameRes)
+	assert.NotEqual(t, newGameRes.Payload["JWT"], nil)
 
 	// TODO currently broken - players array seem to be empty after login
 	// startRec := httptest.NewRecorder()
 	// startReq := httptest.NewRequest(http.MethodPost, "/startgame", nil)
-	// startReq.Header.Set("Authorization", "Bearer "+loginRes.Payload["JWT"].(string))
+	// startReq.Header.Set("Authorization", "Bearer "+newGameRes.Payload["JWT"].(string))
 	// e.ServeHTTP(startRec, startReq)
 	// assert.Equal(t, http.StatusOK, startRec.Code)
 }

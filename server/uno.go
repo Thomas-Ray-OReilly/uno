@@ -44,14 +44,14 @@ var gameStarted bool = false
 // 	return []model.Card{model.Card{rand.Intn(10), randColor(rand.Intn(4))}}
 // }
 
-func newPayload(user string, gameid string) map[string]interface{} { // User will default to "" if not passed
+func newPayload(userId string, gameid string) map[string]interface{} { // User will default to "" if not passed
 	payload := make(map[string]interface{})
 
 	// Update known variables
 	payload["current_card"] = currCard
 	payload["current_player"] = currPlayer
 	payload["all_players"] = players
-	payload["deck"] = allCards[user] // returns nil if currPlayer = "" or user not in allCards
+	payload["deck"] = allCards[userId] // returns nil if currPlayer = "" or user not in allCards
 	payload["game_id"] = gameid
 	payload["game_over"] = checkForWinner()
 
@@ -99,26 +99,26 @@ func createNewGame() (string, error) {
 	return game.ID, nil
 }
 
-func joinGame(game string, username string) (*model.Player, error) {
-	database, err := db.GetDb();
+func joinGame(game string, userId string) (*model.Player, error) {
+	database, err := db.GetDb()
 	if err != nil {
 		var p *model.Player
 		return p, err
 	}
 
-	player, err := database.CreatePlayer(username)
+	player, err := database.CreatePlayer(userId)
 
 	if err != nil {
-        var p *model.Player
+		var p *model.Player
 		return p, err
 	}
 
 	return player, database.JoinGame(game, player.ID)
 }
 
-func playCard(game string, username string, card model.Card) bool {
-	if checkID(game) && currPlayer == username {
-		cards := allCards[username]
+func playCard(game string, userId string, card model.Card) bool {
+	if checkID(game) && currPlayer == userId {
+		cards := allCards[userId]
 		if card.Color == currCard[0].Color || card.Value == currCard[0].Value {
 			// Valid card can be played
 			playerIndex = (playerIndex + 1) % len(players)
@@ -127,7 +127,7 @@ func playCard(game string, username string, card model.Card) bool {
 
 			for index, item := range cards {
 				if item == currCard[0] {
-					allCards[username] = append(cards[:index], cards[index+1:]...)
+					allCards[userId] = append(cards[:index], cards[index+1:]...)
 					break
 				}
 			}
@@ -138,13 +138,13 @@ func playCard(game string, username string, card model.Card) bool {
 }
 
 // TODO: Keep track of current card that is top of the deck
-func drawCard(game string, username string) bool {
+func drawCard(game string, userId string) bool {
 
-	if checkID(game) && username == currPlayer {
+	if checkID(game) && userId == currPlayer {
 		playerIndex = (playerIndex + 1) % len(players)
 		currPlayer = players[playerIndex]
 		// TODO: Use deck utils instead
-		//allCards[username] = append(allCards[username], newRandomCard()[0])
+		//allCards[userId] = append(allCards[userId], newRandomCard()[0])
 		return true
 	}
 	return false
@@ -152,26 +152,26 @@ func drawCard(game string, username string) bool {
 
 // TODO: need to deal the actual cards, not just random numbers
 func dealCards() {
-    // The game has started, no more players are joining
-    // loop through players, set their cards
-    gameStarted = true
-    currPlayer = players[rand.Intn(len(players))]
-    deck := generateShuffledDeck()
+	// The game has started, no more players are joining
+	// loop through players, set their cards
+	gameStarted = true
+	currPlayer = players[rand.Intn(len(players))]
+	deck := generateShuffledDeck()
 
-    for k := range players {
-        cards := []model.Card{}
-        for i := 0; i < 7; i++ {
+	for k := range players {
+		cards := []model.Card{}
+		for i := 0; i < 7; i++ {
 
-            drawnCard := deck[len(deck)-1]
-            deck = deck[:len(deck)-1]
-            cards = append(cards, drawnCard)
-            //cards = append(cards, model.Card{rand.Intn(10), randColor(rand.Intn(4))})
-        }
-        allCards[players[k]] = cards
-    }
+			drawnCard := deck[len(deck)-1]
+			deck = deck[:len(deck)-1]
+			cards = append(cards, drawnCard)
+			//cards = append(cards, model.Card{rand.Intn(10), randColor(rand.Intn(4))})
+		}
+		allCards[players[k]] = cards
+	}
 
-    currCard = deck
-    //currCard = newRandomCard()
+	currCard = deck
+	//currCard = newRandomCard()
 }
 
 // TODO: make sure this reflects on the front end
