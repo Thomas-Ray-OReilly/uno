@@ -126,11 +126,6 @@ func TestPlay(t *testing.T) {
 	json.Unmarshal([]byte(loginRec.Body.String()), &loginRes)
 	assert.NotEqual(t, loginRes.Payload["JWT"], nil)
 
-	startRec := httptest.NewRecorder()
-	startReq := httptest.NewRequest(http.MethodGet, "/startgame", nil)
-	startReq.Header.Set("Authorization", "Bearer "+loginRes.Payload["JWT"].(string))
-	e.ServeHTTP(startRec, startReq)
-
 	playRec := httptest.NewRecorder()
 	playReq := httptest.NewRequest(http.MethodPost, "/play/1/blue", nil)
 	playReq.Header.Set("Authorization", "Bearer "+loginRes.Payload["JWT"].(string))
@@ -154,8 +149,6 @@ func TestStartGame(t *testing.T) {
 	// startRec := httptest.NewRecorder()
 	// startReq := httptest.NewRequest(http.MethodPost, "/startgame", nil)
 	// startReq.Header.Set("Authorization", "Bearer "+loginRes.Payload["JWT"].(string))
-
 	// e.ServeHTTP(startRec, startReq)
-
 	// assert.Equal(t, http.StatusOK, startRec.Code)
 }
