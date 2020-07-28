@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+
 	"github.com/google/uuid"
 	"github.com/jak103/uno/model"
 	"github.com/labstack/echo/v4"
@@ -25,11 +26,11 @@ func setupRoutes(e *echo.Echo) {
 
 func newGame(c echo.Context) error {
 	gameid, gameErr := createNewGame()
-    
-    if  gameErr != nil {
+
+	if gameErr != nil {
 		return gameErr
 	}
-    
+
 	// TODO: validate username
 	encodedJWT, err := newJWT(c.Param("username"), uuid.New(), gameid, true, []byte(signKey))
 
@@ -38,17 +39,16 @@ func newGame(c echo.Context) error {
 	if err == nil {
 		payload = MakeJWTPayload(payload, encodedJWT)
 	} else {
-		// TODO: return some sort of error!
-		payload = newPayload(c.Param("username"), gameid)
+		return c.JSONPretty(http.StatusNonAuthoritativeInfo, &Response{false, nil}, " ")
 	}
 
 	return c.JSONPretty(http.StatusOK, &Response{true, payload}, "  ")
 }
 
 func login(c echo.Context) error {
-    err := joinGame(c.Param("game"), c.Param("username"))
-    
-    return respondWithJWTIfValid(c, err == nil)
+	err := joinGame(c.Param("game"), c.Param("username"))
+
+	return respondWithJWTIfValid(c, err == nil)
 }
 
 func startGame(c echo.Context) error {
@@ -57,11 +57,11 @@ func startGame(c echo.Context) error {
 }
 
 func update(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    if authHeader == "" {
-        return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
-    }
+
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+	if authHeader == "" {
+		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
+	}
 	claims, validUser := getValidClaims(authHeader)
 
 	if !validUser {
@@ -73,36 +73,36 @@ func update(c echo.Context) error {
 }
 
 func play(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    if authHeader == "" {
-        return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
-    }
+
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+	if authHeader == "" {
+		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
+	}
 	claims, validUser := getValidClaims(authHeader)
 
 	if !validUser {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
 	}
-    
-    // TODO Cards have a value, which can include skip, reverse, etc
-    card := model.Card{c.Param("number"), c.Param("color")}
-	valid := playCard(claims["gameid"].(string), claims["userid"].(string), card)
+
+	// TODO Cards have a value, which can include skip, reverse, etc
+	card := model.Card{c.Param("number"), c.Param("color")}
+	valid := playCard(claims["gameid"].(string), claims["name"].(string), card)
 	return respondIfValid(c, valid, claims["userid"].(string), claims["gameid"].(string))
 }
 
 func draw(c echo.Context) error {
-    
-    authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
-    if authHeader == "" {
-        return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
-    }
+
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+	if authHeader == "" {
+		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
+	}
 	claims, validUser := getValidClaims(authHeader)
 
 	if !validUser {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
 	}
 
-	valid := drawCard(claims["gameid"].(string), claims["userid"].(string))
+	valid := drawCard(claims["gameid"].(string), claims["name"].(string))
 	return respondIfValid(c, valid, claims["userid"].(string), claims["gameid"].(string))
 }
 
@@ -118,16 +118,30 @@ func respondIfValid(c echo.Context, valid bool, userId string, gameId string) er
 
 func respondWithJWTIfValid(c echo.Context, valid bool) error {
 	// TODO: validate username and game id
-	// TODO: check if they have a JWT before just overriding it! If they do, we need to make a JWT based off of their current one, but add/change the gameid.
-	encodedJWT, err := newJWT(c.Param("username"), uuid.New(), c.Param("game"), false, []byte(signKey))
 
-	payload := newPayload(c.Param("username"), c.Param("game"))
+	// check if they have a JWT before just overriding it!
+	// If they do, we need to make a JWT based off of their current one, but add/change the gameid.
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+	var username string = c.Param("username")
+	userId := uuid.New()
+	var host bool = false
+	if authHeader != "" {
+		claims, validUser := getValidClaims(authHeader)
+		if validUser {
+			username = claims["name"].(string)
+			userId = claims["userid"].(uuid.UUID)
+			host = claims["isHost"].(bool)
+		}
+	}
+
+	encodedJWT, err := newJWT(username, userId, c.Param("game"), host, []byte(signKey))
+
+	payload := newPayload(username, c.Param("game"))
 
 	if err == nil {
 		payload = MakeJWTPayload(payload, encodedJWT)
 	} else {
-		// TODO: return some sort of error!
-
+		return c.JSONPretty(http.StatusNonAuthoritativeInfo, &Response{false, nil}, " ")
 	}
 
 	var response *Response
