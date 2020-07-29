@@ -86,7 +86,7 @@ func update(c echo.Context) error {
 	}
 
 	valid := updateGame(claims["gameid"].(string))
-	return respondIfValid(c, valid && validUser, claims["userid"].(string), claims["gameid"].(string))
+	return respondIfValid(c, valid && validUser, claims["name"].(string), claims["gameid"].(string))
 }
 
 func play(c echo.Context) error {
@@ -100,8 +100,8 @@ func play(c echo.Context) error {
 
 	// TODO Cards have a value, which can include skip, reverse, etc
 	card := model.Card{c.Param("number"), c.Param("color")}
-	valid := playCard(claims["gameid"].(string), claims["userid"].(string), card)
-	return respondIfValid(c, valid, claims["userid"].(string), claims["gameid"].(string))
+	valid := playCard(claims["gameid"].(string), claims["name"].(string), card)
+	return respondIfValid(c, valid, claims["name"].(string), claims["gameid"].(string))
 }
 
 func draw(c echo.Context) error {
@@ -112,14 +112,14 @@ func draw(c echo.Context) error {
 		return c.JSONPretty(http.StatusUnauthorized, &Response{false, nil}, " ")
 	}
 
-	valid := drawCard(claims["gameid"].(string), claims["userid"].(string))
-	return respondIfValid(c, valid, claims["userid"].(string), claims["gameid"].(string))
+	valid := drawCard(claims["gameid"].(string), claims["name"].(string))
+	return respondIfValid(c, valid, claims["name"].(string), claims["gameid"].(string))
 }
 
-func respondIfValid(c echo.Context, valid bool, userId string, gameId string) error {
+func respondIfValid(c echo.Context, valid bool, username string, gameId string) error {
 	var response *Response
 	if valid {
-		response = &Response{true, newPayload(userId, gameId)}
+		response = &Response{true, newPayload(username, gameId)}
 	} else {
 		response = &Response{false, nil}
 	}

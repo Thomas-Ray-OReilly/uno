@@ -44,14 +44,14 @@ var gameStarted bool = false
 // 	return []model.Card{model.Card{rand.Intn(10), randColor(rand.Intn(4))}}
 // }
 
-func newPayload(userId string, gameid string) map[string]interface{} { // User will default to "" if not passed
+func newPayload(user string, gameid string) map[string]interface{} { // User will default to "" if not passed
 	payload := make(map[string]interface{})
 
 	// Update known variables
 	payload["current_card"] = currCard
 	payload["current_player"] = currPlayer
 	payload["all_players"] = players
-	payload["deck"] = allCards[userId] // returns nil if currPlayer = "" or user not in allCards
+	payload["deck"] = allCards[user] // returns nil if currPlayer = "" or user not in allCards
 	payload["game_id"] = gameid
 	payload["game_over"] = checkForWinner()
 
@@ -99,14 +99,14 @@ func createNewGame() (string, error) {
 	return game.ID, nil
 }
 
-func joinGame(game string, userId string) (*model.Player, error) {
+func joinGame(game string, username string) (*model.Player, error) {
 	database, err := db.GetDb()
 	if err != nil {
 		var p *model.Player
 		return p, err
 	}
 
-	player, err := database.CreatePlayer(userId)
+	player, err := database.CreatePlayer(username)
 
 	if err != nil {
 		var p *model.Player
@@ -116,9 +116,9 @@ func joinGame(game string, userId string) (*model.Player, error) {
 	return player, database.JoinGame(game, player.ID)
 }
 
-func playCard(game string, userId string, card model.Card) bool {
-	if checkID(game) && currPlayer == userId {
-		cards := allCards[userId]
+func playCard(game string, username string, card model.Card) bool {
+	if checkID(game) && currPlayer == username {
+		cards := allCards[username]
 		if card.Color == currCard[0].Color || card.Value == currCard[0].Value {
 			// Valid card can be played
 			playerIndex = (playerIndex + 1) % len(players)
@@ -127,7 +127,7 @@ func playCard(game string, userId string, card model.Card) bool {
 
 			for index, item := range cards {
 				if item == currCard[0] {
-					allCards[userId] = append(cards[:index], cards[index+1:]...)
+					allCards[username] = append(cards[:index], cards[index+1:]...)
 					break
 				}
 			}
@@ -138,13 +138,13 @@ func playCard(game string, userId string, card model.Card) bool {
 }
 
 // TODO: Keep track of current card that is top of the deck
-func drawCard(game string, userId string) bool {
+func drawCard(game string, username string) bool {
 
-	if checkID(game) && userId == currPlayer {
+	if checkID(game) && username == currPlayer {
 		playerIndex = (playerIndex + 1) % len(players)
 		currPlayer = players[playerIndex]
 		// TODO: Use deck utils instead
-		//allCards[userId] = append(allCards[userId], newRandomCard()[0])
+		//allCards[username] = append(allCards[username], newRandomCard()[0])
 		return true
 	}
 	return false
